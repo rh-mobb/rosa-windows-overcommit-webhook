@@ -12,8 +12,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/client-go/kubecli"
 
-	"github.com/scottd018/rosa-windows-overcommit-webhook/nodes"
-	"github.com/scottd018/rosa-windows-overcommit-webhook/vm"
+	"github.com/scottd018/rosa-windows-overcommit-webhook/resources"
 )
 
 // webhook represents a webhook object.
@@ -60,7 +59,7 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get the requested capacity from the request
-	var requestedList vm.Store = []kubevirtcorev1.VirtualMachineInstance{*op.request.virtualMachineInstance}
+	var requestedList resources.VirtualMachineInstances = []kubevirtcorev1.VirtualMachineInstance{*op.request.virtualMachineInstance}
 	requested := requestedList.SumCPU()
 	log.Printf("requested CPU: [%d]", requested)
 
@@ -114,27 +113,27 @@ func (wh *webhook) HealthZ(w http.ResponseWriter, r *http.Request) {
 }
 
 // getFilteredNodes returns a list of filtered nodes that exist in the cluster.
-func (wh *webhook) getFilteredNodes() (nodes.Store, error) {
+func (wh *webhook) getFilteredNodes() (resources.Nodes, error) {
 	nodeList, err := wh.KubeClient.CoreV1().Nodes().List(wh.Context, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list nodes; %v", err)
 	}
 
-	var nodeStore nodes.Store = nodeList.Items
+	var nodeStore resources.Nodes = nodeList.Items
 
-	return nodeStore.Filter(nodes.NewNodeFilter()), nil
+	return nodeStore.Filter(resources.NewNodeFilter()), nil
 }
 
 // getFilteredVirtualMachineInstances returns a list of filtered virtual machine instances that exist in the cluster.
 // we need to gather both virtual machines and virtual machine instances in the case that an instance is not yet
 // created from a virtual machine object.  then we can merge the two together.
-func (wh *webhook) getFilteredVirtualMachineInstances() (vm.Store, error) {
+func (wh *webhook) getFilteredVirtualMachineInstances() (resources.VirtualMachineInstances, error) {
 	vmInstanceList, err := wh.VirtClient.VirtualMachineInstance("").List(wh.Context, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list virtual machine instances; %v", err)
 	}
 
-	var vmStore vm.Store = vmInstanceList.Items
+	var vmStore resources.VirtualMachineInstances = vmInstanceList.Items
 
 	vmList, err := wh.VirtClient.VirtualMachine("").List(wh.Context, metav1.ListOptions{})
 	if err != nil {
@@ -149,8 +148,8 @@ OUTER:
 			}
 		}
 
-		vmStore = append(vmStore, *vm.VirtualMachineInstanceFromVirtualMachine(&v))
+		vmStore = append(vmStore, *resources.VirtualMachineInstanceFromVirtualMachine(&v))
 	}
 
-	return vmStore.Filter(&vm.Filter{}), nil
+	return vmStore.Filter(&resources.VirtualMachineInstanceFilter{}), nil
 }

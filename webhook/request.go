@@ -10,7 +10,7 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
-	"github.com/scottd018/rosa-windows-overcommit-webhook/vm"
+	"github.com/scottd018/rosa-windows-overcommit-webhook/resources"
 )
 
 type request struct {
@@ -42,17 +42,17 @@ func newRequest(r *http.Request) (*request, error) {
 	}
 
 	// get the extractor used for extracting the instance
-	var instanceExtractor vm.VirtualMachineInstanceExtractor
+	var instanceExtractor resources.VirtualMachineInstanceExtractor
 	switch admissionRequest.Kind.Kind {
-	case vm.VirtualMachineType:
-		instanceExtractor = vm.NewVirtualMachine()
-	case vm.VirtualMachineInstanceType:
-		instanceExtractor = vm.NewVirtualMachineInstance()
+	case resources.VirtualMachineType:
+		instanceExtractor = resources.NewVirtualMachine()
+	case resources.VirtualMachineInstanceType:
+		instanceExtractor = resources.NewVirtualMachineInstance()
 	default:
 		return nil, fmt.Errorf(
 			"unsupported kind [%s]; only [%+v] supported",
 			admissionRequest.Kind.Kind,
-			vm.SupportedTypes(),
+			resources.SupportedResourceTypes(),
 		)
 	}
 
