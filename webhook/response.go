@@ -2,8 +2,6 @@ package webhook
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -20,11 +18,7 @@ type response struct {
 }
 
 // send sends a response.
-func (r *response) send(message string, logToStdout bool) {
-	if logToStdout {
-		log.Printf("returning with message: [%s]", message)
-	}
-
+func (r *response) send(message string) {
 	r.review.Response = &admissionv1.AdmissionResponse{
 		Allowed: r.allowed,
 		UID:     r.uid,
@@ -34,11 +28,7 @@ func (r *response) send(message string, logToStdout bool) {
 		},
 	}
 
-	responseBody, err := json.Marshal(r.review)
-	if err != nil {
-		log.Println(fmt.Errorf("unable to marshal response body; %w", err))
-	}
-
+	responseBody, _ := json.Marshal(r.review)
 	r.writer.Header().Set("Content-Type", "application/json")
 	r.writer.Write(responseBody)
 }

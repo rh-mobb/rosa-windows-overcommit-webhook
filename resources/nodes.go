@@ -11,8 +11,8 @@ const (
 	EnvLabelKey    string = "WEBHOOK_NODE_LABEL_KEY"
 	EnvLabelValues string = "WEBHOOK_NODE_LABEL_VALUES"
 
-	DefaultLabelKey    string = "windows"
-	DefaultLabelValues string = "true"
+	DefaultLabelKey    string = "image_type"
+	DefaultLabelValues string = "windows"
 )
 
 type Nodes []corev1.Node
@@ -76,6 +76,10 @@ func (nodes Nodes) Filter(filter *NodeFilter) Nodes {
 // SumCPU sums up the value of all CPUs in the store.
 func (nodes Nodes) SumCPU() int {
 	var sum int
+
+	if len(nodes) == 0 {
+		return sum
+	}
 
 	for node := 0; node < len(nodes); node++ {
 		sum += int(nodes[node].Status.Capacity.Cpu().Value())

@@ -12,32 +12,40 @@ type VirtualMachineInstanceFilter struct{}
 
 // Filter filters a Store object and returns a new store with only filtered virtual machine instances.  In the
 // instance of this webhook, we only want virtual machine instances that are running a windows operating system.
-func (store VirtualMachineInstances) Filter(filter *VirtualMachineInstanceFilter) VirtualMachineInstances {
-	return store
+func (instances VirtualMachineInstances) Filter(filter *VirtualMachineInstanceFilter) VirtualMachineInstances {
+	return instances
 }
 
 // SumCPU sums up the value of all CPUs in the store.
-func (store VirtualMachineInstances) SumCPU() int {
+func (instances VirtualMachineInstances) SumCPU() int {
 	var sum int
 
-	if len(store) == 0 {
+	if len(instances) == 0 {
 		return 0
 	}
 
-	for vm := 0; vm < len(store); vm++ {
+	for vm := 0; vm < len(instances); vm++ {
+		// continue the loop if we have a nil CPU configuration.  this simply defaults to 1 * 1 * 1 so we simply sum
+		// the value (1) and continue the loop.
+		if instances[vm].Spec.Domain.CPU == nil {
+			sum += 1
+
+			continue
+		}
+
 		// according to kubevirt docs, vcpu is determined by the value of sockets * cores * threads
 		// see https://kubevirt.io/user-guide/compute/dedicated_cpu_resources/#requesting-dedicated-cpu-resources
-		sockets := int(store[vm].Spec.Domain.CPU.Sockets)
+		sockets := int(instances[vm].Spec.Domain.CPU.Sockets)
 		if sockets == 0 {
 			sockets = 1
 		}
 
-		cores := int(store[vm].Spec.Domain.CPU.Cores)
+		cores := int(instances[vm].Spec.Domain.CPU.Cores)
 		if cores == 0 {
 			cores = 1
 		}
 
-		threads := int(store[vm].Spec.Domain.CPU.Threads)
+		threads := int(instances[vm].Spec.Domain.CPU.Threads)
 		if threads == 0 {
 			threads = 1
 		}

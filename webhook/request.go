@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -28,7 +27,6 @@ func newRequest(r *http.Request) (*request, error) {
 	}
 	defer r.Body.Close()
 
-	log.Println("unmarshaling request in admission review object")
 	var admissionReview admissionv1.AdmissionReview
 	if err := json.Unmarshal(body, &admissionReview); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal admission review; %w", err)
@@ -57,7 +55,6 @@ func newRequest(r *http.Request) (*request, error) {
 	}
 
 	// extract the instance
-	log.Printf("extracting object from request [%s]", instanceExtractor.Type())
 	instance, err := instanceExtractor.Extract(admissionRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed extracting object from request; %w", err)

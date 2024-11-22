@@ -16,8 +16,6 @@ RUN go mod download
 #       files also need to be explicitly added.
 COPY main.go main.go
 COPY webhook/ webhook/
-COPY vm/ vm/
-COPY nodes/ nodes/
 COPY resources/ resources/
 
 # Build

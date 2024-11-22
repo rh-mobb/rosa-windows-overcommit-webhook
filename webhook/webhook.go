@@ -3,7 +3,6 @@ package webhook
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,49 +49,57 @@ func NewWebhook() (*webhook, error) {
 
 // Validate runs the validation logic for the webhook.
 func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
-	log.Println("received validation request")
-
 	// create the operation object
 	op, err := NewOperation(w, r)
 	if err != nil {
-		op.response.send(err.Error(), true)
+		op.respond(err.Error(), true)
 	}
+	op.log("received validation request")
 
 	// get the requested capacity from the request
 	var requestedList resources.VirtualMachineInstances = []kubevirtcorev1.VirtualMachineInstance{*op.request.virtualMachineInstance}
 	requested := requestedList.SumCPU()
-	log.Printf("requested CPU: [%d]", requested)
 
 	// get the node list from the cluster and the total capacity
 	nodeList, err := wh.getFilteredNodes()
 	if err != nil {
-		op.response.send(err.Error(), true)
+		op.respond(err.Error(), true)
 		return
 	}
 	total := nodeList.SumCPU()
-	log.Printf("total CPU capacity: [%d]", total)
 
 	// get the virtual machine instance list from the cluster and the current used capacity
 	vmInstanceList, err := wh.getFilteredVirtualMachineInstances()
 	if err != nil {
-		op.response.send(err.Error(), true)
+		op.respond(err.Error(), true)
 		return
 	}
 	used := vmInstanceList.SumCPU()
-	log.Printf("used CPU capacity: [%d]", total)
 
-	// ensure the requested capacity would not exceed the total capacity
-	if (used + requested) > total {
-		msg := fmt.Sprintf("requested capacity: [%d], exceeds total capacity: [%d]; currently used [%d]",
+	available := total - used
+
+	op.log(fmt.Sprintf(
+		"capacity: total=[%d], requested=[%d], used=[%d], available=[%d]",
+		total,
+		requested,
+		used,
+		available,
+	))
+
+	// ensure the requested capacity would not exceed the available capacity
+	if requested > available {
+		msg := fmt.Sprintf("requested capacity: [%d], exceeds available capacity: [%d]; currently used [%d]",
 			requested,
-			total,
+			available,
 			used,
 		)
-		op.response.send(msg, true)
+		op.response.allowed = false
+		op.respond(msg, true)
+
 		return
 	}
 
-	op.response.send("request success", false)
+	op.respond("request success", false)
 }
 
 const statusOkMessage = `{"msg": "server is healthy"}`
@@ -103,7 +110,6 @@ func (wh *webhook) HealthZ(w http.ResponseWriter, r *http.Request) {
 
 	_, err := fmt.Fprint(w, statusOkMessage)
 	if err != nil {
-		log.Printf("%s - error writing response", err)
 		w.WriteHeader(http.StatusInternalServerError)
 
 		return
