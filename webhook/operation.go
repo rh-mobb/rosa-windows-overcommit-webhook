@@ -39,7 +39,7 @@ func NewOperation(w http.ResponseWriter, r *http.Request) (*operation, error) {
 // respond sends a response for an operation, optionally logging if requested.
 func (op *operation) respond(msg string, logToStdout bool) {
 	if logToStdout {
-		log.Printf("returning with message: [%s]", msg)
+		op.log(fmt.Sprintf("returning with message: [%s]", msg))
 	}
 
 	op.response.send(msg)
