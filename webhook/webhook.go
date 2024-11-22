@@ -9,6 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
+
+	//cdi "kubevirt.io/client-go/containerizeddataimporter"
 	"kubevirt.io/client-go/kubecli"
 
 	"github.com/scottd018/rosa-windows-overcommit-webhook/resources"
@@ -19,6 +21,7 @@ type webhook struct {
 	Context    context.Context
 	KubeClient *kubernetes.Clientset
 	VirtClient kubecli.KubevirtClient
+	// CDIClient  *cdi.Clientset
 }
 
 // NewWebhook returns a new instance of a webhook object.
@@ -36,14 +39,20 @@ func NewWebhook() (*webhook, error) {
 
 	virtClient, err := kubecli.GetKubevirtClientFromRESTConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("cannot obtain kubevirt client; %w", err)
+		return nil, fmt.Errorf("failed to create kubevirt client; %w", err)
 	}
+
+	// cdiClient, err := cdi.NewForConfig(config)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to create containerizeddataimporter client; %w", err)
+	// }
 
 	// create and run the webhook
 	return &webhook{
 		Context:    context.Background(),
 		KubeClient: kubeClient,
 		VirtClient: virtClient,
+		// CDIClient:  cdiClient,
 	}, nil
 }
 
@@ -156,6 +165,12 @@ OUTER:
 
 		vmStore = append(vmStore, *resources.VirtualMachineInstanceFromVirtualMachine(&v))
 	}
+
+	// // get the data sources which are needed to filter out virtual machine instances
+	// dataSourceList, err := wh.CDIClient.CdiV1beta1().DataSources("").List(wh.Context, metav1.ListOptions{})
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to list data source objects; %v", err)
+	// }
 
 	return vmStore.Filter(&resources.VirtualMachineInstanceFilter{}), nil
 }

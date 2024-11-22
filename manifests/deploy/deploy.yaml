@@ -45,6 +45,14 @@ rules:
     resources:
       - "virtualmachines"
       - "virtualmachineinstances"
+  - apiGroups:
+      - "cdi.kubevirt.io"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+    resources:
+      - "datasources"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

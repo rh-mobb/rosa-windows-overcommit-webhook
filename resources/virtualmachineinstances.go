@@ -55,3 +55,43 @@ func (instances VirtualMachineInstances) SumCPU() int {
 
 	return sum
 }
+
+// hasSysprepVolume returns if the virtualmachineinstance has a sysprep volume or not.  Sysprep volumes are exclusive
+// to windows machines.
+// WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
+// sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
+func hasSysprepVolume(vmi corev1.VirtualMachineInstance) bool {
+	for _, volume := range vmi.Spec.Volumes {
+		if volume.Sysprep != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasWindowsDriverDiskVolume returns if the virtualmachineinstance has a windows driver volume or not.  Windows driver
+// volumes are used for adding windows drivers to windows machines, however it is not restrictive that this only may
+// be included on windows machines (although unlikely).
+// WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
+// sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
+func hasWindowsDriverDiskVolume(vmi corev1.VirtualMachineInstance) bool {
+	for _, volume := range vmi.Spec.Volumes {
+		if volume.DataVolume.Name == "windows-drivers-disk" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// TODO: I believe the data source is the most reliable me
+
+// hasWindowsDataSource returns if the virtualmachineinstance has a windows boot volume or not.  This is dependent on
+// the user selecting the correct boot volume upon creation of the boot volume.  Red Hat boot volumes are guaranteed to
+// be labeled correctly, but that does not stop a user from mislabeling the boot volume.
+// WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
+// sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
+func hasWindowsDataSource(vmi corev1.VirtualMachineInstance) bool {
+	return false
+}
