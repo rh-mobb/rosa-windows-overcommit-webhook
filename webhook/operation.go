@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/scottd018/rosa-windows-overcommit-webhook/resources"
 )
 
 // operation represents an instance of each webhook operation that comes in.  This becomes one object created
@@ -13,6 +15,7 @@ import (
 type operation struct {
 	request  *request
 	response *response
+	object   resources.WindowsInstanceValidator
 }
 
 // NewOperation return a new instance of an operation object.
@@ -28,10 +31,32 @@ func NewOperation(w http.ResponseWriter, r *http.Request) (*operation, error) {
 		return op, fmt.Errorf("unable to create request object; %w", err)
 	}
 
+	// get the extractor used for extracting the instance
+	var validator resources.WindowsInstanceValidator
+	switch req.admissionRequest.Kind.Kind {
+	case resources.VirtualMachineType:
+		validator = resources.NewVirtualMachine()
+	case resources.VirtualMachineInstanceType:
+		validator = resources.NewVirtualMachineInstance()
+	default:
+		return nil, fmt.Errorf(
+			"unsupported kind [%s]; only [%+v] supported",
+			req.admissionRequest.Kind.Kind,
+			resources.SupportedResourceTypes(),
+		)
+	}
+
+	// extract the instance
+	instance, err := validator.Extract(req.admissionRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed extracting object from request; %w", err)
+	}
+
 	// set some values
 	op.response.uid = req.admissionRequest.UID
 	op.request = req
 	op.response.review = req.admissionReview
+	op.object = instance
 
 	return op, nil
 }

@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
-
-	//cdi "kubevirt.io/client-go/containerizeddataimporter"
 	"kubevirt.io/client-go/kubecli"
 
 	"github.com/scottd018/rosa-windows-overcommit-webhook/resources"
@@ -21,7 +19,7 @@ type webhook struct {
 	Context    context.Context
 	KubeClient *kubernetes.Clientset
 	VirtClient kubecli.KubevirtClient
-	// CDIClient  *cdi.Clientset
+	NodeFilter resources.NodeFilter
 }
 
 // NewWebhook returns a new instance of a webhook object.
@@ -42,17 +40,12 @@ func NewWebhook() (*webhook, error) {
 		return nil, fmt.Errorf("failed to create kubevirt client; %w", err)
 	}
 
-	// cdiClient, err := cdi.NewForConfig(config)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to create containerizeddataimporter client; %w", err)
-	// }
-
 	// create and run the webhook
 	return &webhook{
 		Context:    context.Background(),
 		KubeClient: kubeClient,
 		VirtClient: virtClient,
-		// CDIClient:  cdiClient,
+		NodeFilter: resources.NewNodeFilter(os.Getenv(resources.EnvLabelKey), os.Getenv(resources.EnvLabelValues)),
 	}, nil
 }
 
@@ -65,9 +58,14 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 	op.log("received validation request")
 
+	// return immediately if we do not have a windows instance
+	if !op.object.IsWindows() {
+		op.respond("request is not applicable to a windows instance", true)
+		return
+	}
+
 	// get the requested capacity from the request
-	var requestedList resources.VirtualMachineInstances = []kubevirtcorev1.VirtualMachineInstance{*op.request.virtualMachineInstance}
-	requested := requestedList.SumCPU()
+	requested := op.object.SumCPU()
 
 	// get the node list from the cluster and the total capacity
 	nodeList, err := wh.getFilteredNodes()
@@ -134,43 +132,39 @@ func (wh *webhook) getFilteredNodes() (resources.Nodes, error) {
 		return nil, fmt.Errorf("failed to list nodes; %v", err)
 	}
 
-	var nodeStore resources.Nodes = nodeList.Items
+	var nodes resources.Nodes = nodeList.Items
 
-	return nodeStore.Filter(resources.NewNodeFilter()), nil
+	return nodes.Filter(wh.NodeFilter), nil
 }
 
 // getFilteredVirtualMachineInstances returns a list of filtered virtual machine instances that exist in the cluster.
 // we need to gather both virtual machines and virtual machine instances in the case that an instance is not yet
 // created from a virtual machine object.  then we can merge the two together.
 func (wh *webhook) getFilteredVirtualMachineInstances() (resources.VirtualMachineInstances, error) {
-	vmInstanceList, err := wh.VirtClient.VirtualMachineInstance("").List(wh.Context, metav1.ListOptions{})
+	vmInstancesAll, err := wh.VirtClient.VirtualMachineInstance("").List(wh.Context, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list virtual machine instances; %v", err)
 	}
 
-	var vmStore resources.VirtualMachineInstances = vmInstanceList.Items
+	// convert our list to our internal resource and filter
+	instancesFiltered := resources.VirtualMachineInstances(vmInstancesAll.Items).Filter(
+		&resources.VirtualMachineInstancesFilter{},
+	)
 
-	vmList, err := wh.VirtClient.VirtualMachine("").List(wh.Context, metav1.ListOptions{})
+	vmsAll, err := wh.VirtClient.VirtualMachine("").List(wh.Context, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list virtual machines; %v", err)
 	}
 
-OUTER:
-	for _, v := range vmList.Items {
-		for _, vmInstance := range vmInstanceList.Items {
-			if v.Name == vmInstance.Name && v.Namespace == vmInstance.Namespace {
-				continue OUTER
-			}
-		}
+	// convert our list to our internal resource and filter
+	vmsFiltered := resources.VirtualMachines(vmsAll.Items).Filter(
+		&resources.VirtualMachinesFilter{},
+	)
 
-		vmStore = append(vmStore, *resources.VirtualMachineInstanceFromVirtualMachine(&v))
-	}
+	filtered := append(instancesFiltered, vmsFiltered...)
 
-	// // get the data sources which are needed to filter out virtual machine instances
-	// dataSourceList, err := wh.CDIClient.CdiV1beta1().DataSources("").List(wh.Context, metav1.ListOptions{})
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to list data source objects; %v", err)
-	// }
-
-	return vmStore.Filter(&resources.VirtualMachineInstanceFilter{}), nil
+	// return only instances with unique names and namespaces.  this is to avoid a situation where we have a
+	// vm instance created by a vm, but also accounts for someone trying to bypass the overcommit by creating a
+	// vm instance directly
+	return filtered.Unique(), nil
 }
