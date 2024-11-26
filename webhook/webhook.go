@@ -58,6 +58,8 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 	op.log("received validation request")
 
+	op.log(fmt.Sprintf("DEBUG: %+v", op.object))
+
 	// return immediately if we do not need validation
 	if !op.object.NeedsValidation() {
 		op.respond("skipping validation", true)
