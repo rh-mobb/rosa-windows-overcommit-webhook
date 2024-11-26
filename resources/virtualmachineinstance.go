@@ -3,6 +3,7 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "kubevirt.io/api/core/v1"
@@ -100,6 +101,7 @@ func (vmi virtualMachineInstance) isWindows() bool {
 func (vmi virtualMachineInstance) hasSysprepVolume() bool {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.Sysprep != nil {
+			log.Println("has sysprep vol")
 			return true
 		}
 	}
@@ -120,6 +122,7 @@ func (vmi virtualMachineInstance) hasWindowsDriverDiskVolume() bool {
 		}
 
 		if volume.DataVolume.Name == "windows-drivers-disk" {
+			log.Println("has windows driver disk")
 			return true
 		}
 	}
@@ -136,5 +139,10 @@ func (vmi virtualMachineInstance) hasHyperV() bool {
 		return false
 	}
 
-	return vmi.Spec.Domain.Features.Hyperv != nil
+	if vmi.Spec.Domain.Features.Hyperv != nil {
+		log.Println("has hyperv")
+		return true
+	}
+
+	return false
 }
