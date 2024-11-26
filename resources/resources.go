@@ -8,7 +8,6 @@ import (
 // validate a windows instance.
 type WindowsInstanceValidator interface {
 	Extract(*admissionv1.AdmissionRequest) (*virtualMachineInstance, error)
-	Type() string
 	SumCPU() int
 	NeedsValidation() bool
 

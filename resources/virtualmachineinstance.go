@@ -77,11 +77,6 @@ func (vmi virtualMachineInstance) SumCPU() int {
 	return sockets * cores * threads
 }
 
-// Type simply returns the type.
-func (vmi virtualMachineInstance) Type() string {
-	return VirtualMachineInstanceType
-}
-
 // isWindows determines if a virtual machine instance object is a windows instance or not.
 func (vmi virtualMachineInstance) isWindows() bool {
 	if vmi.hasSysprepVolume() {

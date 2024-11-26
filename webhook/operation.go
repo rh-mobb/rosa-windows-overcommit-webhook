@@ -74,7 +74,7 @@ func (op *operation) respond(msg string, logToStdout bool) {
 func (op *operation) log(msg string) {
 	log.Printf(
 		"[type=%s,object=%s/%s,uid=%s] %s",
-		op.object.Type(),
+		op.request.admissionRequest.Kind.Kind,
 		op.object.GetNamespace(),
 		op.object.GetName(),
 		op.response.uid,

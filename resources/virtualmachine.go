@@ -42,11 +42,6 @@ func (vm virtualMachine) SumCPU() int {
 	return vm.VirtualMachineInstance().SumCPU()
 }
 
-// Type simply returns the type.
-func (vm virtualMachine) Type() string {
-	return VirtualMachineType
-}
-
 // VirtualMachineInstance returns the virtual machine instance object from the virtual machine template spec.
 func (vm virtualMachine) VirtualMachineInstance() *virtualMachineInstance {
 	return &virtualMachineInstance{
