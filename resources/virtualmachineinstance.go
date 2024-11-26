@@ -79,12 +79,12 @@ func (vmi virtualMachineInstance) SumCPU() int {
 
 // isWindows determines if a virtual machine instance object is a windows instance or not.
 func (vmi virtualMachineInstance) isWindows() bool {
-	for _, isWindows := range []func() bool{
+	for _, hasWindowsIdentifier := range []func() bool{
 		vmi.hasSysprepVolume,
 		vmi.hasWindowsDriverDiskVolume,
 		vmi.hasHyperV,
 	} {
-		if isWindows() {
+		if hasWindowsIdentifier() {
 			return true
 		}
 	}
