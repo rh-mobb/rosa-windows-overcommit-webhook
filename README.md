@@ -16,6 +16,10 @@ There are several known limitations to the webhook:
 4. Depends on node labels via `WEBHOOK_NODE_LABEL_KEY` and `WEBHOOK_NODE_LABEL_VALUES` input.  If nodes are 
 missing labels, they will not be used to calculate the total capacity for windows nodes in the cluster.
 5. Validation happens prior to scheduling.
+6. Test manifests exist in the `manifests/test` directory.
+
+> **WARN** be advised that the test manifests contain passwords in cleartext for testing only.  This in not
+> intended to be for production use and was simply used to validate the proof-of-concept.
 
 
 ## Usage
