@@ -60,20 +60,12 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 
 	// return immediately if we do not need validation
 	if !op.object.NeedsValidation() {
-		op.respond("request does not need validation", false)
+		op.respond("skipping validation", true)
 		return
 	}
 
 	// get the requested capacity from the request
 	requested := op.object.SumCPU()
-
-	// get the node list from the cluster and the total capacity
-	nodeList, err := wh.getFilteredNodes()
-	if err != nil {
-		op.respond(err.Error(), true)
-		return
-	}
-	total := nodeList.SumCPU()
 
 	// get the virtual machine instance list from the cluster and the current used capacity
 	vmInstanceList, err := wh.getFilteredVirtualMachineInstances()
@@ -82,6 +74,23 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	used := vmInstanceList.SumCPU()
+
+	// return if we found an instance in the cluster matching this name
+	// TODO: this likely needs to be handled differently for an UPDATE request
+	for i := 0; i < len(vmInstanceList); i++ {
+		if vmInstanceList[i].GetName() == op.object.GetName() && vmInstanceList[i].GetNamespace() == op.object.GetNamespace() {
+			op.respond("skipping validation", true)
+			return
+		}
+	}
+
+	// get the node list from the cluster and the total capacity
+	nodeList, err := wh.getFilteredNodes()
+	if err != nil {
+		op.respond(err.Error(), true)
+		return
+	}
+	total := nodeList.SumCPU()
 
 	available := total - used
 

@@ -10,7 +10,6 @@ type WindowsInstanceValidator interface {
 	Extract(*admissionv1.AdmissionRequest) (*virtualMachineInstance, error)
 	Type() string
 	SumCPU() int
-	IsWindows() bool
 	NeedsValidation() bool
 
 	GetName() string

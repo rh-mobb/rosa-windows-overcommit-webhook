@@ -34,7 +34,7 @@ func (vmi virtualMachineInstance) Extract(admissionRequest *admissionv1.Admissio
 func (vmi virtualMachineInstance) NeedsValidation() bool {
 	// if we have no owner references, use windows logic to determine if we need validation
 	if len(vmi.GetOwnerReferences()) == 0 {
-		return vmi.IsWindows()
+		return vmi.isWindows()
 	}
 
 	// we do not need to validate an instance already owned by a virtual machine
@@ -45,20 +45,7 @@ func (vmi virtualMachineInstance) NeedsValidation() bool {
 	}
 
 	// finally use the windows logic to determine if we need validation
-	return vmi.IsWindows()
-}
-
-// IsWindows determines if a virtual machine instance object is a windows instance or not.
-func (vmi virtualMachineInstance) IsWindows() bool {
-	if vmi.HasSysprepVolume() {
-		return true
-	}
-
-	if vmi.HasWindowsDriverDiskVolume() {
-		return true
-	}
-
-	return false
+	return vmi.isWindows()
 }
 
 // SumCPU sums up the value of all CPUs for the virtual machine instance.
@@ -95,11 +82,24 @@ func (vmi virtualMachineInstance) Type() string {
 	return VirtualMachineInstanceType
 }
 
-// HasSysprepVolume returns if the virtualmachineinstance has a sysprep volume or not.  Sysprep volumes are exclusive
+// isWindows determines if a virtual machine instance object is a windows instance or not.
+func (vmi virtualMachineInstance) isWindows() bool {
+	if vmi.hasSysprepVolume() {
+		return true
+	}
+
+	if vmi.hasWindowsDriverDiskVolume() {
+		return true
+	}
+
+	return false
+}
+
+// hasSysprepVolume returns if the virtualmachineinstance has a sysprep volume or not.  Sysprep volumes are exclusive
 // to windows machines.
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
 // sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
-func (vmi virtualMachineInstance) HasSysprepVolume() bool {
+func (vmi virtualMachineInstance) hasSysprepVolume() bool {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.Sysprep != nil {
 			return true
@@ -109,12 +109,12 @@ func (vmi virtualMachineInstance) HasSysprepVolume() bool {
 	return false
 }
 
-// HasWindowsDriverDiskVolume returns if the virtualmachineinstance has a windows driver volume or not.  Windows driver
+// hasWindowsDriverDiskVolume returns if the virtualmachineinstance has a windows driver volume or not.  Windows driver
 // volumes are used for adding windows drivers to windows machines, however it is not restrictive that this only may
 // be included on windows machines (although unlikely).
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
 // sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
-func (vmi virtualMachineInstance) HasWindowsDriverDiskVolume() bool {
+func (vmi virtualMachineInstance) hasWindowsDriverDiskVolume() bool {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.DataVolume == nil {
 			continue
