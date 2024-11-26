@@ -36,7 +36,8 @@ If you do not use the script, be sure to create the following files:
 * **Webhook Key** - `tmp/server.key` - The webhook server key.
 * **Webhook Cert** - `tmp/server.crt` - The webhook server certificate, signed by the `tmp/ca.crt` file (above).  It 
 should be noted that the certificate must be requested with `windows-overcommit-webhook.windows-overcommit-webhook.svc`
-as the name, as this is the name the Kubernetes API expects.  Please see the `scripts/gen-certs.sh` for an example.
+as the common name and/or subject alternative name, as this is the name the Kubernetes API expects.  Please see 
+the `scripts/gen-certs.sh` for an example.
 
 
 2. Create the webhook in the ROSA cluster.  This step assumes you have a functioning ROSA cluster and your 
