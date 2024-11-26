@@ -25,7 +25,8 @@ missing labels, they will not be used to calculate the total capacity for window
 ## Usage
 
 This is simple usage for the webhook.  Please review the `manifests/deploy.yaml` file for accuracy for your
-environment.
+environment.  You will need to clone this repository and change to the cloned repository directory to run 
+through these instructions.
 
 1. Webhooks need their own set of certificates in order to properly function.  You can create your own with a simple
 script provided in this repository:
