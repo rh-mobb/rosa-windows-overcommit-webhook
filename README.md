@@ -55,7 +55,7 @@ by the webhook.
 
 ## Cleanup
 
-1. To cleanup the webhook configuration, and the deployment, namespace and certicates, simply run:
+1. To cleanup the webhook configuration, and the deployment, namespace and certificates, simply run:
 
 ```bash
 make destroy
