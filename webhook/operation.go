@@ -70,7 +70,14 @@ func (op *operation) respond(msg string, logToStdout bool) {
 	op.response.send(msg)
 }
 
-// log logs a message and includes the uid for the operation for tracking purposes in the logs.
+// log logs a message and includes the uid for the operation and the name/namespace and type for tracking purposes in the logs.
 func (op *operation) log(msg string) {
-	log.Printf("[uid=%s] %s", op.response.uid, msg)
+	log.Printf(
+		"[type=%s,object=%s/%s,uid=%s] %s",
+		op.object.Type(),
+		op.object.GetNamespace(),
+		op.object.GetName(),
+		op.response.uid,
+		msg,
+	)
 }

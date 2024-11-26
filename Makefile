@@ -25,7 +25,7 @@ create:
 
 destroy:
 	@kubectl delete -f manifests/deploy/deploy.yaml
-	@kubectl delete ns windows-overcommit-webhook
+	@kubectl delete -f manifests/deploy/namespace.yaml
 
 #
 # development and test related tasks

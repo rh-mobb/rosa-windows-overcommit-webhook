@@ -58,9 +58,9 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 	op.log("received validation request")
 
-	// return immediately if we do not have a windows instance
-	if !op.object.IsWindows() {
-		op.respond("request is not applicable to a windows instance", true)
+	// return immediately if we do not need validation
+	if !op.object.NeedsValidation() {
+		op.respond("request does not need validation", false)
 		return
 	}
 

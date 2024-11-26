@@ -32,6 +32,11 @@ func (vm virtualMachine) Extract(admissionRequest *admissionv1.AdmissionRequest)
 	return vm.VirtualMachineInstance(), nil
 }
 
+// NeedsValidation returns if a virtual machine object needs validation or not.
+func (vm virtualMachine) NeedsValidation() bool {
+	return vm.IsWindows()
+}
+
 // IsWindows determines if a virtual machine object is a windows instance or not.
 func (vm virtualMachine) IsWindows() bool {
 	if vm.HasWindowsPreference() {

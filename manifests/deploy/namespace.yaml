@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    openshift.io/sa.scc.mcs: s0:c30,c10
+    openshift.io/sa.scc.supplemental-groups: 1000860101/1
+    openshift.io/sa.scc.uid-range: 1000860101/1
+  name: windows-overcommit-webhook

@@ -11,6 +11,10 @@ type WindowsInstanceValidator interface {
 	Type() string
 	SumCPU() int
 	IsWindows() bool
+	NeedsValidation() bool
+
+	GetName() string
+	GetNamespace() string
 }
 
 // SupportedResourceTypes returns the supported resources for this webhook.
