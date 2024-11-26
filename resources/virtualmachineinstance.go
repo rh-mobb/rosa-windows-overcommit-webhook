@@ -98,6 +98,10 @@ func (vmi virtualMachineInstance) HasSysprepVolume() bool {
 // sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
 func (vmi virtualMachineInstance) HasWindowsDriverDiskVolume() bool {
 	for _, volume := range vmi.Spec.Volumes {
+		if volume.DataVolume == nil {
+			continue
+		}
+
 		if volume.DataVolume.Name == "windows-drivers-disk" {
 			return true
 		}

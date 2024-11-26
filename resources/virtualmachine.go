@@ -34,7 +34,11 @@ func (vm virtualMachine) Extract(admissionRequest *admissionv1.AdmissionRequest)
 
 // IsWindows determines if a virtual machine object is a windows instance or not.
 func (vm virtualMachine) IsWindows() bool {
-	return vm.HasWindowsPreference()
+	if vm.HasWindowsPreference() {
+		return true
+	}
+
+	return vm.VirtualMachineInstance().IsWindows()
 }
 
 // SumCPU sums up the value of all CPUs for the virtual machine.

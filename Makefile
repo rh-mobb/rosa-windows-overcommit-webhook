@@ -16,8 +16,7 @@ certs:
 	@scripts/gen-certs.sh
 
 create:
-	@kubectl create ns my-vms --dry-run=client -o yaml | kubectl apply -f -
-	@kubectl create ns windows-overcommit-webhook --dry-run=client -o yaml | kubectl apply -f - && \
+	@kubectl apply -f manifests/deploy/namespace.yaml && \
 		scripts/apply-certs.sh && \
 		kubectl apply -f manifests/deploy/deploy.yaml && \
 		kubectl patch validatingwebhookconfiguration windows-overcommit-webhook \
@@ -25,6 +24,14 @@ create:
 			-p="$$(echo '[{"op": "replace", "path": "/webhooks/0/clientConfig/caBundle", "value": "'$$(cat tmp/ca.crt | base64 | tr -d '\n')'"}]')"
 
 destroy:
-	@kubectl delete -f manifests/deploy/deploy.yaml && \
-		kubectl delete ns windows-overcommit-webhook && \
-		kubectl delete ns my-vms
+	@kubectl delete -f manifests/deploy/deploy.yaml
+	@kubectl delete ns windows-overcommit-webhook
+
+#
+# development and test related tasks
+#
+create-vm-ns:
+	@kubectl create ns my-vms --dry-run=client -o yaml | kubectl apply -f -
+
+destroy-vm-ns:
+	@kubectl delete ns my-vms

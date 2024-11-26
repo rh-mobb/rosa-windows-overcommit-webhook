@@ -146,7 +146,7 @@ spec:
               drop:
                 - "ALL"
             runAsNonRoot: true
-            runAsUser: 1001
+            runAsUser: 1000860101
           livenessProbe:
             failureThreshold: 3
             httpGet:
