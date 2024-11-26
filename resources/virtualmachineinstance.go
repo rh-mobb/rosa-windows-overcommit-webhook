@@ -79,12 +79,14 @@ func (vmi virtualMachineInstance) SumCPU() int {
 
 // isWindows determines if a virtual machine instance object is a windows instance or not.
 func (vmi virtualMachineInstance) isWindows() bool {
-	if vmi.hasSysprepVolume() {
-		return true
-	}
-
-	if vmi.hasWindowsDriverDiskVolume() {
-		return true
+	for _, isWindows := range []func() bool{
+		vmi.hasSysprepVolume,
+		vmi.hasWindowsDriverDiskVolume,
+		vmi.hasHyperV,
+	} {
+		if isWindows() {
+			return true
+		}
 	}
 
 	return false
@@ -93,7 +95,8 @@ func (vmi virtualMachineInstance) isWindows() bool {
 // hasSysprepVolume returns if the virtualmachineinstance has a sysprep volume or not.  Sysprep volumes are exclusive
 // to windows machines.
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
-// sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
+// sysprep volumes for linux machines. This is guaranteed to work when using out of the box OpenShift templates, but
+// may not work with use created templates.
 func (vmi virtualMachineInstance) hasSysprepVolume() bool {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.Sysprep != nil {
@@ -108,7 +111,8 @@ func (vmi virtualMachineInstance) hasSysprepVolume() bool {
 // volumes are used for adding windows drivers to windows machines, however it is not restrictive that this only may
 // be included on windows machines (although unlikely).
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
-// sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
+// sysprep volumes for linux machines. This is guaranteed to work when using out of the box OpenShift templates, but
+// may not work with use created templates.
 func (vmi virtualMachineInstance) hasWindowsDriverDiskVolume() bool {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.DataVolume == nil {
@@ -121,4 +125,16 @@ func (vmi virtualMachineInstance) hasWindowsDriverDiskVolume() bool {
 	}
 
 	return false
+}
+
+// hasHyperV returns if the virtualmachineinstance has Hyper-V settings set.
+// WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error.
+// This is guaranteed to work when using out of the box OpenShift templates, but may not work with use created
+// templates.
+func (vmi virtualMachineInstance) hasHyperV() bool {
+	if vmi.Spec.Domain.Features == nil {
+		return false
+	}
+
+	return vmi.Spec.Domain.Features.Hyperv != nil
 }
