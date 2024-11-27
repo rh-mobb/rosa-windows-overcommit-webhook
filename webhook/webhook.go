@@ -84,14 +84,14 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 	used := vmInstanceList.SumCPU()
 
-	// return if we found an instance in the cluster matching this name
-	// TODO: this likely needs to be handled differently for an UPDATE request
-	for i := 0; i < len(vmInstanceList); i++ {
-		if vmInstanceList[i].GetName() == op.object.GetName() && vmInstanceList[i].GetNamespace() == op.object.GetNamespace() {
-			wh.respond(op, "skipping validation", true)
-			return
-		}
-	}
+	// // return if we found an instance in the cluster matching this name
+	// // TODO: this likely needs to be handled differently for an UPDATE request
+	// for i := 0; i < len(vmInstanceList); i++ {
+	// 	if vmInstanceList[i].GetName() == op.object.GetName() && vmInstanceList[i].GetNamespace() == op.object.GetNamespace() {
+	// 		wh.respond(op, "skipping validation", true)
+	// 		return
+	// 	}
+	// }
 
 	// get the node list from the cluster and the total capacity
 	nodeList, err := wh.getFilteredNodes()
@@ -178,17 +178,21 @@ func (wh *webhook) getFilteredVirtualMachineInstances() (resources.VirtualMachin
 		&resources.VirtualMachineInstancesFilter{},
 	)
 
-	vmsAll, err := wh.VirtClient.VirtualMachine("").List(wh.Context, metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list virtual machines; %v", err)
-	}
+	filtered := instancesFiltered
 
-	// convert our list to our internal resource and filter
-	vmsFiltered := resources.VirtualMachines(vmsAll.Items).Filter(
-		&resources.VirtualMachinesFilter{},
-	)
+	// TODO: correct logic if we ever need to account for both virtual machines and virtual machine instances.  For now
+	// we are only counting virtual machine instances.
+	// vmsAll, err := wh.VirtClient.VirtualMachine("").List(wh.Context, metav1.ListOptions{})
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to list virtual machines; %v", err)
+	// }
 
-	filtered := append(instancesFiltered, vmsFiltered...)
+	// // convert our list to our internal resource and filter
+	// vmsFiltered := resources.VirtualMachines(vmsAll.Items).Filter(
+	// 	&resources.VirtualMachinesFilter{},
+	// )
+
+	// filtered := append(instancesFiltered, vmsFiltered...)
 
 	// return only instances with unique names and namespaces.  this is to avoid a situation where we have a
 	// vm instance created by a vm, but also accounts for someone trying to bypass the overcommit by creating a

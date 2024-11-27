@@ -40,7 +40,7 @@ func (vmi virtualMachineInstance) NeedsValidation() bool {
 			// because provisioning from a preference seems to have a specialized workflow that is difficult
 			// to determine for windows.
 			// TODO: this logic is likely to need adjusted.
-			if ref.Name == VirtualMachineType && !vmi.hasWindowsPreference() {
+			if ref.Name == VirtualMachineType {
 				return false
 			}
 		}

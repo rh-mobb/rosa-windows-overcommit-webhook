@@ -31,6 +31,8 @@ func NewOperation(w http.ResponseWriter, r *http.Request) (*operation, error) {
 	}
 
 	// get the extractor used for extracting the instance
+	// TODO: correct logic if we ever need to account for both virtual machines and virtual machine instances.  For now
+	// we are only counting virtual machine instances.
 	var validator resources.WindowsInstanceValidator
 	switch req.admissionRequest.Kind.Kind {
 	case resources.VirtualMachineType:

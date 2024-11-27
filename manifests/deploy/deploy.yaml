@@ -206,6 +206,8 @@ webhooks:
           # TODO: add update operation
           # - UPDATE
         resources:
+          # TODO: correct logic if we ever need to account for both virtual machines and virtual machine instances.  For now
+          # we are only counting virtual machine instances.
           - "virtualmachines"
           - "virtualmachineinstances"
     admissionReviewVersions:
