@@ -8,9 +8,7 @@ import (
 type VirtualMachines []corev1.VirtualMachine
 
 // VirtualMachinesFilter represents a filter based on a set of key value inputs that are used to filter nodes.
-type VirtualMachinesFilter struct {
-	VirtualMachineInstances VirtualMachineInstances
-}
+type VirtualMachinesFilter struct{}
 
 // Filter filters a Store object and returns a new store with only filtered virtual machine instances.  In the
 // instance of this webhook, we only want virtual machine instances that are running a windows operating system.
