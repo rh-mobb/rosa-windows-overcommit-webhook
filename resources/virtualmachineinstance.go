@@ -34,15 +34,16 @@ func (vmi virtualMachineInstance) Extract(admissionRequest *admissionv1.Admissio
 
 // NeedsValidation returns if a virtual machine instance object needs validation or not.
 func (vmi virtualMachineInstance) NeedsValidation() bool {
-	// if we have no owner references, use windows logic to determine if we need validation
-	if len(vmi.GetOwnerReferences()) == 0 {
-		return vmi.isWindows()
-	}
-
-	// we do not need to validate an instance already owned by a virtual machine
-	for _, ref := range vmi.GetOwnerReferences() {
-		if ref.Name == VirtualMachineType {
-			return false
+	// if we have owner references, see if we are owned by a virtual machine
+	if len(vmi.GetOwnerReferences()) > 0 {
+		for _, ref := range vmi.GetOwnerReferences() {
+			// we only want to validate virtual machine instances that do not have a windows preference.  this is
+			// because provisioning from a preference seems to have a specialized workflow that is difficult
+			// to determine for windows.
+			// TODO: this logic is likely to need adjusted.
+			if ref.Name == VirtualMachineType && !vmi.hasWindowsPreference() {
+				return false
+			}
 		}
 	}
 
