@@ -35,8 +35,8 @@ func NewOperation(w http.ResponseWriter, r *http.Request) (*operation, error) {
 	// we are only counting virtual machine instances.
 	var validator resources.WindowsInstanceValidator
 	switch req.admissionRequest.Kind.Kind {
-	case resources.VirtualMachineType:
-		validator = resources.NewVirtualMachine()
+	// case resources.VirtualMachineType:
+	// 	validator = resources.NewVirtualMachine()
 	case resources.VirtualMachineInstanceType:
 		validator = resources.NewVirtualMachineInstance()
 	default:

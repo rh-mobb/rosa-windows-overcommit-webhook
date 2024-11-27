@@ -33,18 +33,20 @@ func (vmi virtualMachineInstance) Extract(admissionRequest *admissionv1.Admissio
 
 // NeedsValidation returns if a virtual machine instance object needs validation or not.
 func (vmi virtualMachineInstance) NeedsValidation() *WindowsValidationResult {
-	// if we have owner references, see if we are owned by a virtual machine
-	if len(vmi.GetOwnerReferences()) > 0 {
-		for _, ref := range vmi.GetOwnerReferences() {
-			// we only want to validate virtual machine instances that do not have a windows preference.  this is
-			// because provisioning from a preference seems to have a specialized workflow that is difficult
-			// to determine for windows.
-			// TODO: this logic is likely to need adjusted.
-			if ref.Name == VirtualMachineType {
-				return &WindowsValidationResult{Reason: "virtual machine instance owned by virtual machine object"}
-			}
-		}
-	}
+	// TODO: correct logic if we ever need to account for both virtual machines and virtual machine instances.  For now
+	// we are only counting virtual machine instances.
+	// // if we have owner references, see if we are owned by a virtual machine
+	// if len(vmi.GetOwnerReferences()) > 0 {
+	// 	for _, ref := range vmi.GetOwnerReferences() {
+	// 		// we only want to validate virtual machine instances that do not have a windows preference.  this is
+	// 		// because provisioning from a preference seems to have a specialized workflow that is difficult
+	// 		// to determine for windows.
+	// 		// TODO: this logic is likely to need adjusted.
+	// 		if ref.Name == VirtualMachineType {
+	// 			return &WindowsValidationResult{Reason: "virtual machine instance owned by virtual machine object"}
+	// 		}
+	// 	}
+	// }
 
 	// finally use the windows logic to determine if we need validation
 	return vmi.isWindows()
@@ -159,11 +161,17 @@ func (vmi virtualMachineInstance) hasWindowsPreference() *WindowsValidationResul
 	}
 
 	if annotations["vm.kubevirt.io/os"] == "windows" {
-		return &WindowsValidationResult{NeedsValidation: true, Reason: "has 'vm.kubevirt.io/os' windows annotation"}
+		return &WindowsValidationResult{
+			NeedsValidation: true,
+			Reason:          "has 'vm.kubevirt.io/os' windows annotation",
+		}
 	}
 
 	if strings.HasPrefix(annotations["kubevirt.io/cluster-preference-name"], "windows") {
-		return &WindowsValidationResult{NeedsValidation: true, Reason: "has 'kubevirt.io/cluster-preference-name' windows annotation"}
+		return &WindowsValidationResult{
+			NeedsValidation: true,
+			Reason:          "has 'kubevirt.io/cluster-preference-name' windows annotation",
+		}
 	}
 
 	return &WindowsValidationResult{Reason: "has no windows preference"}
