@@ -2,7 +2,6 @@ package webhook
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -59,25 +58,4 @@ func NewOperation(w http.ResponseWriter, r *http.Request) (*operation, error) {
 	op.object = instance
 
 	return op, nil
-}
-
-// respond sends a response for an operation, optionally logging if requested.
-func (op *operation) respond(msg string, logToStdout bool) {
-	if logToStdout {
-		op.log(fmt.Sprintf("returning with message: [%s]", msg))
-	}
-
-	op.response.send(msg)
-}
-
-// log logs a message and includes the uid for the operation and the name/namespace and type for tracking purposes in the logs.
-func (op *operation) log(msg string) {
-	log.Printf(
-		"[type=%s,object=%s/%s,uid=%s] %s",
-		op.request.admissionRequest.Kind.Kind,
-		op.object.GetNamespace(),
-		op.object.GetName(),
-		op.response.uid,
-		msg,
-	)
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/rs/zerolog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -20,6 +21,7 @@ type webhook struct {
 	KubeClient *kubernetes.Clientset
 	VirtClient kubecli.KubevirtClient
 	NodeFilter resources.NodeFilter
+	Log        zerolog.Logger
 }
 
 // NewWebhook returns a new instance of a webhook object.
@@ -40,12 +42,18 @@ func NewWebhook() (*webhook, error) {
 		return nil, fmt.Errorf("failed to create kubevirt client; %w", err)
 	}
 
+	logLevel := zerolog.InfoLevel
+	if os.Getenv("DEBUG") == "true" {
+		logLevel = zerolog.DebugLevel
+	}
+
 	// create and run the webhook
 	return &webhook{
 		Context:    context.Background(),
 		KubeClient: kubeClient,
 		VirtClient: virtClient,
 		NodeFilter: resources.NewNodeFilter(os.Getenv(resources.EnvLabelKey), os.Getenv(resources.EnvLabelValues)),
+		Log:        zerolog.New(os.Stdout).Level(logLevel),
 	}, nil
 }
 
@@ -54,15 +62,14 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	// create the operation object
 	op, err := NewOperation(w, r)
 	if err != nil {
-		op.respond(err.Error(), true)
+		wh.respond(op, err.Error(), true)
 	}
-	op.log("received validation request")
-
-	op.log(fmt.Sprintf("DEBUG: %+v", op.object))
+	wh.Log.Info().Msg("received validation request")
+	wh.Log.Debug().Msgf("OBJECT: %+v", op.object)
 
 	// return immediately if we do not need validation
 	if !op.object.NeedsValidation() {
-		op.respond("skipping validation", true)
+		wh.respond(op, "skipping validation", true)
 		return
 	}
 
@@ -72,7 +79,7 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	// get the virtual machine instance list from the cluster and the current used capacity
 	vmInstanceList, err := wh.getFilteredVirtualMachineInstances()
 	if err != nil {
-		op.respond(err.Error(), true)
+		wh.respond(op, err.Error(), true)
 		return
 	}
 	used := vmInstanceList.SumCPU()
@@ -81,7 +88,7 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	// TODO: this likely needs to be handled differently for an UPDATE request
 	for i := 0; i < len(vmInstanceList); i++ {
 		if vmInstanceList[i].GetName() == op.object.GetName() && vmInstanceList[i].GetNamespace() == op.object.GetNamespace() {
-			op.respond("skipping validation", true)
+			wh.respond(op, "skipping validation", true)
 			return
 		}
 	}
@@ -89,14 +96,14 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	// get the node list from the cluster and the total capacity
 	nodeList, err := wh.getFilteredNodes()
 	if err != nil {
-		op.respond(err.Error(), true)
+		wh.respond(op, err.Error(), true)
 		return
 	}
 	total := nodeList.SumCPU()
 
 	available := total - used
 
-	op.log(fmt.Sprintf(
+	wh.Log.Info().Msg(fmt.Sprintf(
 		"capacity: total=[%d], requested=[%d], used=[%d], available=[%d]",
 		total,
 		requested,
@@ -112,12 +119,12 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 			used,
 		)
 		op.response.allowed = false
-		op.respond(msg, true)
+		wh.respond(op, msg, true)
 
 		return
 	}
 
-	op.respond("request success", false)
+	wh.respond(op, "request success", false)
 }
 
 const statusOkMessage = `{"msg": "server is healthy"}`
@@ -134,6 +141,15 @@ func (wh *webhook) HealthZ(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// respond sends a response for a webhook operation, optionally logging if requested.
+func (wh *webhook) respond(op *operation, msg string, logToStdout bool) {
+	if logToStdout {
+		wh.Log.Info().Msgf("returning with message: [%s]", msg)
+	}
+
+	op.response.send(msg)
 }
 
 // getFilteredNodes returns a list of filtered nodes that exist in the cluster.

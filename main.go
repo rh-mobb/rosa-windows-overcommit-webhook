@@ -17,7 +17,6 @@ func main() {
 	// set the handlers and start
 	http.HandleFunc("/validate", w.Validate)
 	http.HandleFunc("/healthz", w.HealthZ)
-	log.Println("Starting webhook server on :8443")
-	log.Fatal(http.ListenAndServeTLS(":8443", "/ssl_certs/tls.crt", "/ssl_certs/tls.key", nil))
-	//log.Fatal(http.ListenAndServe(":8080", nil))
+	w.Log.Info().Msg("Starting webhook server on :8443")
+	w.Log.Fatal().Msg(http.ListenAndServeTLS(":8443", "/ssl_certs/tls.crt", "/ssl_certs/tls.key", nil).Error())
 }

@@ -3,7 +3,6 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
@@ -61,7 +60,6 @@ func (vm virtualMachine) VirtualMachineInstance() *virtualMachineInstance {
 // isWindows determines if a virtual machine object is a windows instance or not.
 func (vm virtualMachine) isWindows() bool {
 	if vm.hasWindowsPreference() {
-		log.Println("has windows preference")
 		return true
 	}
 
@@ -75,12 +73,10 @@ func (vm virtualMachine) isWindows() bool {
 // sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
 func (vm virtualMachine) hasWindowsPreference() bool {
 	if vm.Spec.Preference == nil {
-		log.Println("nil preference")
 		return false
 	}
 
 	if strings.HasPrefix(vm.Spec.Preference.Name, "windows") {
-		log.Println("has windows preference")
 		return true
 	}
 
