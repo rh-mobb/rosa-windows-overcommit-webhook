@@ -21,7 +21,11 @@ type operation struct {
 func NewOperation(w http.ResponseWriter, r *http.Request) (*operation, error) {
 	// create the base operation object
 	op := &operation{
-		response: &response{allowed: true, uid: types.UID(""), writer: w},
+		response: &response{
+			allowed: true,
+			uid:     types.UID(""),
+			writer:  w,
+		},
 	}
 
 	// create the request object

@@ -2,6 +2,7 @@ package resources
 
 import (
 	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type WindowsValidationResult struct {
@@ -18,6 +19,7 @@ type WindowsInstanceValidator interface {
 
 	GetName() string
 	GetNamespace() string
+	GetObjectKind() schema.ObjectKind
 }
 
 // SupportedResourceTypes returns the supported resources for this webhook.

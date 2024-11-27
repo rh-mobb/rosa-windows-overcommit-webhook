@@ -21,7 +21,7 @@ type webhook struct {
 	KubeClient *kubernetes.Clientset
 	VirtClient kubecli.KubevirtClient
 	NodeFilter resources.NodeFilter
-	Log        zerolog.Logger
+	Logger     zerolog.Logger
 }
 
 // NewWebhook returns a new instance of a webhook object.
@@ -53,7 +53,7 @@ func NewWebhook() (*webhook, error) {
 		KubeClient: kubeClient,
 		VirtClient: virtClient,
 		NodeFilter: resources.NewNodeFilter(os.Getenv(resources.EnvLabelKey), os.Getenv(resources.EnvLabelValues)),
-		Log:        zerolog.New(os.Stdout).Level(logLevel),
+		Logger:     zerolog.New(os.Stdout).Level(logLevel),
 	}, nil
 }
 
@@ -64,8 +64,8 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		wh.respond(op, err.Error(), true)
 	}
-	wh.Log.Info().Msg("received validation request")
-	wh.Log.Debug().Msgf("OBJECT: %+v", op.object)
+	wh.log(op).Msg("received validation request")
+	wh.debug(op).Msgf("OBJECT: %+v", op.object)
 
 	// return immediately if we do not need validation
 	validationResult := op.object.NeedsValidation()
@@ -74,7 +74,7 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wh.Log.Info().Msgf("validating request for reason [%s]", validationResult.Reason)
+	wh.log(op).Msgf("validating request for reason [%s]", validationResult.Reason)
 
 	// get the requested capacity from the request
 	requested := op.object.SumCPU()
@@ -106,7 +106,7 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 
 	available := total - used
 
-	wh.Log.Info().Msg(fmt.Sprintf(
+	wh.log(op).Msg(fmt.Sprintf(
 		"capacity: total=[%d], requested=[%d], used=[%d], available=[%d]",
 		total,
 		requested,
@@ -146,10 +146,28 @@ func (wh *webhook) HealthZ(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// log logs an info message.
+func (wh *webhook) log(op *operation) *zerolog.Event {
+	return wh.Logger.Info().
+		Str("uid", string(op.response.uid)).
+		Str("kind", op.object.GetObjectKind().GroupVersionKind().Kind).
+		Str("name", op.object.GetName()).
+		Str("namespace", op.object.GetNamespace())
+}
+
+// debug logs a debug message.
+func (wh *webhook) debug(op *operation) *zerolog.Event {
+	return wh.Logger.Debug().
+		Str("uid", string(op.response.uid)).
+		Str("kind", op.object.GetObjectKind().GroupVersionKind().Kind).
+		Str("name", op.object.GetName()).
+		Str("namespace", op.object.GetNamespace())
+}
+
 // respond sends a response for a webhook operation, optionally logging if requested.
 func (wh *webhook) respond(op *operation, msg string, logToStdout bool) {
 	if logToStdout {
-		wh.Log.Info().Msgf("returning with message: [%s]", msg)
+		wh.log(op).Msgf("returning with message: [%s]", msg)
 	}
 
 	op.response.send(msg)
