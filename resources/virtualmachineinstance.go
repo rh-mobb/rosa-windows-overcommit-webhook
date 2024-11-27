@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "kubevirt.io/api/core/v1"
@@ -84,6 +85,7 @@ func (vmi virtualMachineInstance) isWindows() bool {
 		vmi.hasSysprepVolume,
 		vmi.hasWindowsDriverDiskVolume,
 		vmi.hasHyperV,
+		vmi.hasWindowsPreference,
 	} {
 		if hasWindowsIdentifier() {
 			return true
@@ -145,4 +147,15 @@ func (vmi virtualMachineInstance) hasHyperV() bool {
 	}
 
 	return false
+}
+
+// hasWindowsPreference returns if the virtualmachineinstance has a windows preference annotation.
+// WARN: it should be noted that this annotation is created when provisioning from instance type.  It is entirely
+// possible that users can select their own instance type and bypass this check.
+func (vmi virtualMachineInstance) hasWindowsPreference() bool {
+	if len(vmi.GetAnnotations()) == 0 {
+		return false
+	}
+
+	return strings.HasPrefix(vmi.GetAnnotations()["kubevirt.io/cluster-preference-name"], "windows")
 }
