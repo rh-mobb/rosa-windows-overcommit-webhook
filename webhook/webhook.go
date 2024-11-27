@@ -107,9 +107,10 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	available := total - used
 
 	wh.log(op).
-		Str("total", string(total)).
-		Str("requested", string(requested)).
-		Str("used", string(used)).
+		Int("total", total).
+		Int("available", available).
+		Int("requested", requested).
+		Int("used", used).
 		Msg("capacity values")
 
 	// ensure the requested capacity would not exceed the available capacity
