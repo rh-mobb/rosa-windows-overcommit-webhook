@@ -160,7 +160,7 @@ func (vmi virtualMachineInstance) hasWindowsPreference() *WindowsValidationResul
 		return &WindowsValidationResult{Reason: "has no annotations"}
 	}
 
-	if annotations["vm.kubevirt.io/os"] == "windows" {
+	if strings.HasPrefix(annotations["vm.kubevirt.io/os"], "windows") {
 		return &WindowsValidationResult{
 			NeedsValidation: true,
 			Reason:          "has 'vm.kubevirt.io/os' windows annotation",
