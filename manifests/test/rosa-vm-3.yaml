@@ -198,7 +198,7 @@ spec:
           utc: {}
         cpu:
           cores: 1
-          sockets: 64
+          sockets: 32
           threads: 1
         devices:
           disks:

@@ -106,16 +106,14 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 
 	available := total - used
 
-	wh.log(op).Msg(fmt.Sprintf(
-		"capacity: total=[%d], requested=[%d], used=[%d], available=[%d]",
-		total,
-		requested,
-		used,
-		available,
-	))
+	wh.log(op).
+		Str("total", string(total)).
+		Str("requested", string(requested)).
+		Str("used", string(used)).
+		Msg("capacity values")
 
 	// ensure the requested capacity would not exceed the available capacity
-	if requested >= available {
+	if requested > available {
 		msg := fmt.Sprintf("requested capacity: [%d], exceeds available capacity: [%d]; currently used [%d]",
 			requested,
 			available,
