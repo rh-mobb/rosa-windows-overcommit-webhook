@@ -20,7 +20,7 @@ func (vms VirtualMachines) Filter(filter *VirtualMachinesFilter) VirtualMachineI
 	for i := 0; i < len(vms); i++ {
 		var vm virtualMachine = virtualMachine(vms[i])
 
-		if vm.isWindows() {
+		if vm.isWindows().NeedsValidation {
 			filtered = append(filtered, corev1.VirtualMachineInstance(*vm.VirtualMachineInstance()))
 		}
 	}

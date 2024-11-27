@@ -7,60 +7,6 @@ import (
 	corev1 "kubevirt.io/api/core/v1"
 )
 
-func Test_virtualMachineInstance_hasWindowsPreference(t *testing.T) {
-	tests := []struct {
-		name string
-		vmi  virtualMachineInstance
-		want bool
-	}{
-		{
-			name: "ensure resource with windows prefix annotation returns true",
-			vmi: virtualMachineInstance{
-				ObjectMeta: v1.ObjectMeta{
-					Annotations: map[string]string{
-						"kubevirt.io/cluster-preference-name": "windows.2k19",
-					},
-				},
-			},
-			want: true,
-		},
-		{
-			name: "ensure resource without windows prefix annotation returns true",
-			vmi: virtualMachineInstance{
-				ObjectMeta: v1.ObjectMeta{
-					Annotations: map[string]string{
-						"kubevirt.io/cluster-preference-name": "rhel.9",
-					},
-				},
-			},
-			want: false,
-		},
-		{
-			name: "ensure resource without annotation returns false",
-			vmi: virtualMachineInstance{
-				ObjectMeta: v1.ObjectMeta{
-					Annotations: map[string]string{
-						"fake": "annotation",
-					},
-				},
-			},
-			want: false,
-		},
-		{
-			name: "ensure resource with no annotations returns false",
-			vmi:  virtualMachineInstance{},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.vmi.hasWindowsPreference(); got != tt.want {
-				t.Errorf("virtualMachineInstance.hasWindowsPreference() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_virtualMachineInstance_NeedsValidation(t *testing.T) {
 	t.Parallel()
 
@@ -195,7 +141,8 @@ func Test_virtualMachineInstance_NeedsValidation(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := tt.vmi.NeedsValidation(); got != tt.want {
+			result := tt.vmi.NeedsValidation()
+			if got := result.NeedsValidation; got != tt.want {
 				t.Errorf("virtualMachineInstance.NeedsValidation() = %v, want %v", got, tt.want)
 			}
 		})

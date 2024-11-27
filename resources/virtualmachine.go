@@ -33,7 +33,7 @@ func (vm virtualMachine) Extract(admissionRequest *admissionv1.AdmissionRequest)
 }
 
 // NeedsValidation returns if a virtual machine object needs validation or not.
-func (vm virtualMachine) NeedsValidation() bool {
+func (vm virtualMachine) NeedsValidation() *WindowsValidationResult {
 	return vm.isWindows()
 }
 
@@ -58,9 +58,11 @@ func (vm virtualMachine) VirtualMachineInstance() *virtualMachineInstance {
 }
 
 // isWindows determines if a virtual machine object is a windows instance or not.
-func (vm virtualMachine) isWindows() bool {
-	if vm.hasWindowsPreference() {
-		return true
+func (vm virtualMachine) isWindows() *WindowsValidationResult {
+	result := vm.hasWindowsPreference()
+
+	if result.NeedsValidation {
+		return result
 	}
 
 	return vm.VirtualMachineInstance().isWindows()
@@ -71,14 +73,14 @@ func (vm virtualMachine) isWindows() bool {
 // way to determine windows but it does not stop a user from mislabeling the instance type.
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
 // sysprep volumes for linux machines.  This is guaranteed to work when using out of the box OpenShift templates.
-func (vm virtualMachine) hasWindowsPreference() bool {
+func (vm virtualMachine) hasWindowsPreference() *WindowsValidationResult {
 	if vm.Spec.Preference == nil {
-		return false
+		return &WindowsValidationResult{Reason: "nil preference"}
 	}
 
 	if strings.HasPrefix(vm.Spec.Preference.Name, "windows") {
-		return true
+		return &WindowsValidationResult{Reason: "has windows name preference"}
 	}
 
-	return false
+	return &WindowsValidationResult{Reason: "has no windows preference"}
 }

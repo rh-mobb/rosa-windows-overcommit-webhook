@@ -20,11 +20,11 @@ func (instances VirtualMachineInstances) Filter(filter *VirtualMachineInstancesF
 	for i := 0; i < len(instances); i++ {
 		var instance virtualMachineInstance = virtualMachineInstance(instances[i])
 
-		if instance.hasSysprepVolume() {
+		if instance.hasSysprepVolume().NeedsValidation {
 			filtered = append(filtered, corev1.VirtualMachineInstance(instance))
 		}
 
-		if instance.hasWindowsDriverDiskVolume() {
+		if instance.hasWindowsDriverDiskVolume().NeedsValidation {
 			filtered = append(filtered, corev1.VirtualMachineInstance(instance))
 		}
 	}

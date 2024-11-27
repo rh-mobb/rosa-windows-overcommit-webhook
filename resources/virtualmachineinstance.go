@@ -32,7 +32,7 @@ func (vmi virtualMachineInstance) Extract(admissionRequest *admissionv1.Admissio
 }
 
 // NeedsValidation returns if a virtual machine instance object needs validation or not.
-func (vmi virtualMachineInstance) NeedsValidation() bool {
+func (vmi virtualMachineInstance) NeedsValidation() *WindowsValidationResult {
 	// if we have owner references, see if we are owned by a virtual machine
 	if len(vmi.GetOwnerReferences()) > 0 {
 		for _, ref := range vmi.GetOwnerReferences() {
@@ -41,7 +41,7 @@ func (vmi virtualMachineInstance) NeedsValidation() bool {
 			// to determine for windows.
 			// TODO: this logic is likely to need adjusted.
 			if ref.Name == VirtualMachineType {
-				return false
+				return &WindowsValidationResult{Reason: "virtual machine instance owned by virtual machine object"}
 			}
 		}
 	}
@@ -80,19 +80,21 @@ func (vmi virtualMachineInstance) SumCPU() int {
 }
 
 // isWindows determines if a virtual machine instance object is a windows instance or not.
-func (vmi virtualMachineInstance) isWindows() bool {
-	for _, hasWindowsIdentifier := range []func() bool{
+func (vmi virtualMachineInstance) isWindows() *WindowsValidationResult {
+	for _, hasWindowsIdentifier := range []func() *WindowsValidationResult{
 		vmi.hasSysprepVolume,
 		vmi.hasWindowsDriverDiskVolume,
 		vmi.hasHyperV,
 		vmi.hasWindowsPreference,
 	} {
-		if hasWindowsIdentifier() {
-			return true
+		result := hasWindowsIdentifier()
+
+		if result.NeedsValidation {
+			return result
 		}
 	}
 
-	return false
+	return &WindowsValidationResult{Reason: "no validation required"}
 }
 
 // hasSysprepVolume returns if the virtualmachineinstance has a sysprep volume or not.  Sysprep volumes are exclusive
@@ -100,14 +102,14 @@ func (vmi virtualMachineInstance) isWindows() bool {
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
 // sysprep volumes for linux machines. This is guaranteed to work when using out of the box OpenShift templates, but
 // may not work with use created templates.
-func (vmi virtualMachineInstance) hasSysprepVolume() bool {
+func (vmi virtualMachineInstance) hasSysprepVolume() *WindowsValidationResult {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.Sysprep != nil {
-			return true
+			return &WindowsValidationResult{NeedsValidation: true, Reason: "has sysprep volume"}
 		}
 	}
 
-	return false
+	return &WindowsValidationResult{Reason: "has no sysprep volume"}
 }
 
 // hasWindowsDriverDiskVolume returns if the virtualmachineinstance has a windows driver volume or not.  Windows driver
@@ -116,49 +118,53 @@ func (vmi virtualMachineInstance) hasSysprepVolume() bool {
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error that includes
 // sysprep volumes for linux machines. This is guaranteed to work when using out of the box OpenShift templates, but
 // may not work with use created templates.
-func (vmi virtualMachineInstance) hasWindowsDriverDiskVolume() bool {
+func (vmi virtualMachineInstance) hasWindowsDriverDiskVolume() *WindowsValidationResult {
 	for _, volume := range vmi.Spec.Volumes {
 		if volume.DataVolume == nil {
 			continue
 		}
 
 		if volume.DataVolume.Name == "windows-drivers-disk" {
-			return true
+			return &WindowsValidationResult{NeedsValidation: true, Reason: "has windows-driver-disk-volume"}
 		}
 	}
 
-	return false
+	return &WindowsValidationResult{Reason: "has no windows-driver-disk-volume"}
 }
 
 // hasHyperV returns if the virtualmachineinstance has Hyper-V settings set.
 // WARN: it should be noted that users who deploy their instances via YAML may have a copy/paste error.
 // This is guaranteed to work when using out of the box OpenShift templates, but may not work with use created
 // templates.
-func (vmi virtualMachineInstance) hasHyperV() bool {
+func (vmi virtualMachineInstance) hasHyperV() *WindowsValidationResult {
 	if vmi.Spec.Domain.Features == nil {
-		return false
+		return &WindowsValidationResult{Reason: "has nil features"}
 	}
 
 	if vmi.Spec.Domain.Features.Hyperv != nil {
-		return true
+		return &WindowsValidationResult{NeedsValidation: true, Reason: "has hyper-v features"}
 	}
 
-	return false
+	return &WindowsValidationResult{Reason: "has no hyper-v features"}
 }
 
 // hasWindowsPreference returns if the virtualmachineinstance has a windows preference annotation.
 // WARN: it should be noted that this annotation is created when provisioning from instance type.  It is entirely
 // possible that users can select their own instance type and bypass this check.
-func (vmi virtualMachineInstance) hasWindowsPreference() bool {
+func (vmi virtualMachineInstance) hasWindowsPreference() *WindowsValidationResult {
 	annotations := vmi.GetAnnotations()
 
 	if len(annotations) == 0 {
-		return false
+		return &WindowsValidationResult{Reason: "has no annotations"}
 	}
 
 	if annotations["vm.kubevirt.io/os"] == "windows" {
-		return true
+		return &WindowsValidationResult{NeedsValidation: true, Reason: "has 'vm.kubevirt.io/os' windows annotation"}
 	}
 
-	return strings.HasPrefix(annotations["kubevirt.io/cluster-preference-name"], "windows")
+	if strings.HasPrefix(annotations["kubevirt.io/cluster-preference-name"], "windows") {
+		return &WindowsValidationResult{NeedsValidation: true, Reason: "has 'kubevirt.io/cluster-preference-name' windows annotation"}
+	}
+
+	return &WindowsValidationResult{Reason: "has no windows preference"}
 }

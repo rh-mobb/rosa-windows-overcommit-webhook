@@ -68,10 +68,13 @@ func (wh *webhook) Validate(w http.ResponseWriter, r *http.Request) {
 	wh.Log.Debug().Msgf("OBJECT: %+v", op.object)
 
 	// return immediately if we do not need validation
-	if !op.object.NeedsValidation() {
-		wh.respond(op, "skipping validation", true)
+	validationResult := op.object.NeedsValidation()
+	if !validationResult.NeedsValidation {
+		wh.respond(op, fmt.Sprintf("skipping validation, reason [%s]", validationResult.Reason), true)
 		return
 	}
+
+	wh.Log.Info().Msgf("validating request for reason [%s]", validationResult.Reason)
 
 	// get the requested capacity from the request
 	requested := op.object.SumCPU()
