@@ -150,9 +150,15 @@ func (vmi virtualMachineInstance) hasHyperV() bool {
 // WARN: it should be noted that this annotation is created when provisioning from instance type.  It is entirely
 // possible that users can select their own instance type and bypass this check.
 func (vmi virtualMachineInstance) hasWindowsPreference() bool {
-	if len(vmi.GetAnnotations()) == 0 {
+	annotations := vmi.GetAnnotations()
+
+	if len(annotations) == 0 {
 		return false
 	}
 
-	return strings.HasPrefix(vmi.GetAnnotations()["kubevirt.io/cluster-preference-name"], "windows")
+	if annotations["vm.kubevirt.io/os"] == "windows" {
+		return true
+	}
+
+	return strings.HasPrefix(annotations["kubevirt.io/cluster-preference-name"], "windows")
 }
