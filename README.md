@@ -12,9 +12,15 @@ There are several known limitations to the webhook:
 
 1. Only accounts for `CREATE` requests and not `UPDATE` requests
 2. Logic between `domain.cpu` and `requests/limits` has not yet been determined (see #1)
-3. Only `VirtualMachine` and `VirtualMachineInstance` types are validated (there may be more)
+3. For simplicity, only `VirtualMachineInstance` types are validated
+   * `VirtualMachine` objects may also be validated but the logic was beyond a simple proof-of-concept.  The
+    result of this means that users who submit a `VirtualMachine` to the API will be successful, but the 
+    subordinate `VirutalMachineInstance` object will fail creation, much like the 
+    relationship between `Deployments` and `ReplicaSets` and `Pods`.
+   * There may also be more objects to be validated beyond `VirtualMachine` and `VirtualMachineInstance` objects.
 4. Depends on node labels via `WEBHOOK_NODE_LABEL_KEY` and `WEBHOOK_NODE_LABEL_VALUES` input.  If nodes are 
-missing labels, they will not be used to calculate the total capacity for windows nodes in the cluster.
+missing labels, they will not be used to calculate the total capacity for windows nodes in the cluster.  This is
+defaulted in the standard installation process in this README.
 5. Validation happens prior to scheduling.
 6. Test manifests exist in the `manifests/test` directory.
 
