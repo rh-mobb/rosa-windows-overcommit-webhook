@@ -136,9 +136,9 @@ spec:
           imagePullPolicy: Always
           env:
             - name: "WEBHOOK_NODE_LABEL_KEY"
-              value: "windows"
+              value: "image_type"
             - name: "WEBHOOK_NODE_LABEL_VALUES"
-              value: "true"
+              value: "windows"
             - name: "DEBUG"
               value: "false"
           securityContext:
